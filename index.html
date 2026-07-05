@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D-Modell Gronausestraat 150–154, Losser (Perceel 810 + 1174)</title>
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;height:100%;background:#dfe7ee;font-family:'Segoe UI',Arial,sans-serif}
+  #c{display:block;width:100%;height:100%}
+  #hud{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);border-radius:10px;padding:12px 14px;box-shadow:0 2px 10px rgba(0,0,0,.18);max-width:330px}
+  #hud h1{font-size:15px;margin:0 0 4px}
+  #hud p{font-size:11.5px;margin:4px 0;color:#333;line-height:1.35}
+  .btns{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+  .btns button{border:1px solid #a9b4bf;background:#f4f6f8;border-radius:6px;padding:5px 9px;font-size:11.5px;cursor:pointer}
+  .btns button:hover{background:#e2e9f0}
+  .btns button.on{background:#2f5f9e;color:#fff;border-color:#2f5f9e}
+  #legend{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.92);border-radius:10px;padding:10px 12px;font-size:11px;color:#333;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+  .li{display:flex;align-items:center;gap:6px;margin:2px 0}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  #src{position:absolute;bottom:12px;right:12px;background:rgba(255,255,255,.85);border-radius:8px;padding:7px 10px;font-size:10px;color:#555;max-width:340px;line-height:1.4}
+  #hint{position:absolute;top:12px;right:12px;background:rgba(30,40,50,.75);color:#fff;border-radius:8px;padding:7px 10px;font-size:11px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <h1>Gronausestraat 150–154, Losser</h1>
+  <p><b>Perceel 810</b> (4.500 m²) &amp; <b>Perceel 1174</b> (552 m²), Sektion N, kad. Gemeinde Losser. Maßstäbliches Modell aus amtlichen Grundrissen (BAG/Kadaster) und Laserscan-Höhen (3D BAG, AHN4 2022).</p>
+  <div class="btns">
+    <button id="bTop">Draufsicht</button>
+    <button id="bDrone">Drohnen-Ansicht</button>
+    <button id="bLab" class="on">Beschriftung</button>
+    <button id="bNb" class="on">Nachbarn</button>
+  </div>
+</div>
+<div id="legend">
+  <div class="li"><span class="sw" style="background:#e0623a"></span> Grenze Perceel 810</div>
+  <div class="li"><span class="sw" style="background:#2f8fd6"></span> Grenze Perceel 1174</div>
+  <div class="li"><span class="sw" style="background:#96604a"></span> Halle Nr. 150 (1970)</div>
+  <div class="li"><span class="sw" style="background:#c8a066"></span> Wohnhaus 152/152A (1970)</div>
+  <div class="li"><span class="sw" style="background:#35302a"></span> Wohnteil dunkel (2-gesch.)</div>
+  <div class="li"><span class="sw" style="background:#eceae4"></span> Showroom Nr. 154 (1961)</div>
+  <div class="li"><span class="sw" style="background:#8a7a64"></span> Schuppen (1965)</div>
+  <div class="li"><span class="sw" style="background:#b9b7b2"></span> Nachbarbebauung (Kontext)</div>
+</div>
+<div id="src">Quellen: BAG (Grundrisse, Baujahre), Kadastrale Kaart v5 (Parzellen), 3D BAG/AHN4 2022 (Gebäudehöhen, ±0,2–0,4 m). Dachdetails, Gauben, Materialien nach Drohnenaufnahmen vereinfacht. Bäume und Fahrzeuge illustrativ.</div>
+<div id="hint">Ziehen: drehen · Rad: zoomen · Rechte Taste: verschieben</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+// ---------- Koordinaten: RD (EPSG:28992), Kurzform x-265000 / y-475000 ----------
+var OX=700, OY=405; // lokales Zentrum RD (265700, 475405)
+function sx(x){return x-OX} function sz(y){return OY-y} // Szene: x=Ost, z=Süd, y=Höhe
+function v2(p){return new THREE.Vector2(p[0]-OX, p[1]-OY)} // für Shapes (wird zu Nord=-z rotiert)
+
+// ---------- Amtliche Grundrisse (BAG) ----------
+var HALL=[[718.481,416.413],[712.764,429.495],[649.985,401.898],[652.48,396.203],[667.814,402.943],[667.649,403.317],[669.13,403.967],[672.526,396.211]];
+var HOUSE_BRICK=[[702.856,401.544],[706.147,394.233],[718.865,399.986],[715.47,407.251]];
+var HOUSE_DARK=[[715.47,407.251],[718.865,399.986],[719.173,399.304],[725.065,401.97],[721.069,410.856],[715.069,408.142]];
+var SHOWROOM=[[746.358,395.543],[744.46,405.968],[725.217,402.434],[726.61,394.781],[737.475,396.777],[738.001,393.886],[733.559,393.196],[734.258,388.697],[736.855,389.852],[746.609,394.191],[748.65,395.093],[748.655,395.403]];
+var SHOWROOM_HI=[[726.61,394.781],[746.358,395.543],[744.46,405.968],[725.217,402.434]];
+var SHED_ROW=[[697.708,372.396],[709.25,377.574],[711.494,378.572],[708.836,384.251],[695.177,378.18],[688.476,375.201],[691.134,369.447]];
+var SHED_W=[[668.456,375.284],[661.504,390.605],[655.982,388.091],[662.934,372.77]];
+// Parzellen (Kadaster)
+var P810=[[754.992,412.427],[752.411,411.339],[752.235,416.259],[751.852,424.474],[751.216,432.056],[751.056,433.687],[749.421,445.587],[735.528,439.505],[723.542,434.236],[712.969,429.585],[712.764,429.495],[703.37,425.365],[693.855,421.182],[682.766,416.307],[671.66,411.425],[661.95,407.157],[652.53,403.017],[649.985,401.898],[643.261,398.957],[644.003,397.239],[647.557,388.991],[649.835,383.843],[654.466,373.352],[656.255,369.298],[692.144,385.111],[697.712,372.387],[709.25,377.574],[736.855,389.852],[746.609,394.191],[752.314,396.712],[755.977,398.331],[755.729,412.738]];
+var P1174=[[656.255,369.298],[657.907,365.556],[660.067,360.62],[661.953,356.314],[697.712,372.387],[692.144,385.111]];
+var P1172=[[620.822,376.858],[617.505,375.442],[620.555,369.919],[625.53,360.908],[625.656,360.68],[654.466,373.352],[649.835,383.843],[647.557,388.991],[631.879,382.034]];
+var P1173=[[654.466,373.352],[625.656,360.68],[630.468,351.557],[632.276,348.048],[660.067,360.62],[657.907,365.556],[656.255,369.298]];
+// Nachbarn (Kontext, BAG-Grundrisse, Höhen AHN/geschätzt)
+var NB=[
+ {p:[[711.494,378.572],[709.25,377.574],[697.708,372.396],[691.134,369.447],[690.931,369.341],[682.364,365.693],[682.771,364.75],[684.539,360.643],[685.977,357.302],[694.58,361.198],[701.313,364.158],[702.091,364.5],[712.769,369.194],[712.812,369.541],[724.971,375.241],[732.156,375.335],[732.143,370.587],[732.143,370.423],[748.356,370.461],[748.525,380.997],[747.639,381.008],[736.716,381.143],[736.855,389.852],[734.258,388.697],[731.006,387.25],[727.724,385.791],[719.585,382.171],[712.146,378.862]],h:4.6,pv:true}, // Südnachbar 1960, PV
+ {p:[[746.609,394.191],[736.855,389.852],[736.716,381.143],[747.639,381.008],[747.783,389.755],[747.817,391.837],[748.596,391.79],[748.65,395.093]],h:4.0}, // Haus 1969 südl. Showroom
+ {p:[[745.183,366.808],[739.068,366.569],[739.249,361.923],[745.125,362.152],[745.239,359.214],[739.384,358.986],[739.568,354.26],[753.907,354.809],[753.437,367.13]],h:6.0}, // Nr.166
+ {p:[[745.838,344.043],[745.504,342.0],[738.803,341.77],[738.936,337.779],[754.377,337.972],[754.125,345.51]],h:5.5}, // Nr.172
+ {p:[[754.125,345.51],[753.898,352.303],[738.496,351.775],[738.652,347.117],[745.727,347.361],[745.838,344.043]],h:5.5}, // Nr.170
+ {p:[[778.795,405.504],[778.905,398.939],[791.329,401.968],[791.265,405.715]],h:6.0}, // Nr.173 (gegenüber)
+ {p:[[778.079,413.06],[779.168,406.579],[789.99,410.284],[789.355,414.069],[784.924,414.172]],h:6.0}, // Nr.171
+ {p:[[774.348,435.166],[775.212,430.199],[787.705,433.84],[787.102,437.233],[784.1,436.912]],h:6.0}, // Nr.165/167
+ {p:[[777.063,419.101],[778.079,413.06],[788.863,417.145],[788.217,420.986]],h:5.5}, // Nr.169
+ {p:[[779.013,392.474],[787.292,392.612],[791.635,393.861],[791.105,396.675],[786.967,399.147],[778.905,398.939]],h:5.5}, // Nr.175
+ {p:[[779.238,390.26],[779.339,376.893],[793.293,383.299],[793.24,390.069]],h:6.5}, // Nr.177 (1927)
+ {p:[[656.09,439.741],[657.772,430.388],[667.597,433.222],[665.297,445.563],[657.458,444.238]],h:6.5}, // Dr Staringstraat 11
+ {p:[[645.177,441.89],[646.845,433.076],[653.331,429.604],[657.772,430.388],[656.09,439.741],[652.685,443.216]],h:6.5},
+ {p:[[665.297,445.563],[667.597,433.222],[679.322,434.739],[677.771,443.514],[672.855,447.885]],h:6.5},
+ {p:[[678.672,438.417],[680.04,430.509],[690.073,441.378],[688.49,449.83],[681.085,448.525]],h:6.0}
+];
+
+// ---------- Szene ----------
+var canvas=document.getElementById('c');
+var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+var scene=new THREE.Scene(); scene.background=new THREE.Color(0xdce8f2);
+scene.fog=new THREE.Fog(0xdce8f2,420,900);
+var camera=new THREE.PerspectiveCamera(45,2,0.5,2000);
+
+scene.add(new THREE.AmbientLight(0xffffff,0.55));
+var hemi=new THREE.HemisphereLight(0xcfe4f5,0x8a9a76,0.35); scene.add(hemi);
+var sun=new THREE.DirectionalLight(0xfff3d9,0.95);
+sun.position.set(-60,110,90); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-140; sun.shadow.camera.right=140; sun.shadow.camera.top=140; sun.shadow.camera.bottom=-140;
+sun.shadow.camera.far=400; sun.shadow.bias=-0.0004;
+scene.add(sun);
+
+function mat(c,opt){var m=new THREE.MeshLambertMaterial(Object.assign({color:c},opt||{}));return m}
+var M={grass:mat(0x9fb87f),pav:mat(0xc9c0ac),lawn:mat(0x84ab5e),asph:mat(0x6f7276),bike:mat(0xa8543e),
+ hallW:mat(0x96604a),hallR:mat(0x565a5f),pv:mat(0x1f2a38),gable:mat(0xf2f2f0),blue:mat(0x2f5f9e),
+ brick:mat(0xc8a066),roofD:mat(0x3b3b3d),dark:mat(0x35302a),
+ glass:mat(0x9fc4d4,{transparent:true,opacity:0.75}),fascia:mat(0xeceae4),gravel:mat(0x99917f),door:mat(0x2f6b3c),
+ wood:mat(0x8a7a64),woodR:mat(0x6e6152),ctx:mat(0xbfbdb8),ctxR:mat(0x9d9b96),
+ trunk:mat(0x6d5844),leaf1:mat(0x5c7f43),leaf2:mat(0x6f9350),hedge:mat(0x4f7a3a),fence:mat(0x9aa0a6),win:mat(0xbcd3df)};
+
+// Boden
+var ground=new THREE.Mesh(new THREE.PlaneGeometry(900,900),M.grass);
+ground.rotation.x=-Math.PI/2; ground.position.y=-0.05; ground.receiveShadow=true; scene.add(ground);
+
+// Polygon-Hilfen
+function shape(poly){var s=new THREE.Shape(); s.setFromPoints(poly.map(v2)); return s}
+function fill(poly,m,y){var g=new THREE.ShapeGeometry(shape(poly));var me=new THREE.Mesh(g,m);
+ me.rotation.x=-Math.PI/2; me.position.y=y; me.receiveShadow=true; scene.add(me); return me}
+function prism(poly,h,m,y0,parent){var g=new THREE.ExtrudeGeometry(shape(poly),{depth:h,bevelEnabled:false});
+ var me=new THREE.Mesh(g,m); me.rotation.x=-Math.PI/2; me.position.y=y0||0;
+ me.castShadow=true; me.receiveShadow=true; (parent||scene).add(me); return me}
+function outline(poly,color,y,lw){var pts=poly.map(function(p){return new THREE.Vector3(sx(p[0]),y,sz(p[1]))});
+ pts.push(pts[0].clone());
+ var line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:color,linewidth:lw||2}));
+ scene.add(line); return line}
+// dicke Grenze als Bandsegmente
+function border(poly,color,y,w){var grp=new THREE.Group(),m=mat(color);
+ for(var i=0;i<poly.length;i++){var a=poly[i],b=poly[(i+1)%poly.length];
+  var ax=sx(a[0]),az=sz(a[1]),bx=sx(b[0]),bz=sz(b[1]);
+  var dx=bx-ax,dz=bz-az,len=Math.sqrt(dx*dx+dz*dz); if(len<0.01)continue;
+  var seg=new THREE.Mesh(new THREE.BoxGeometry(len,0.06,w),m);
+  seg.position.set((ax+bx)/2,y,(az+bz)/2); seg.rotation.y=Math.atan2(-dz,dx); grp.add(seg)}
+ scene.add(grp); return grp}
+// Satteldach-Prisma
+function gable(aX,aY,bX,bY,halfW,eave,ridge,m,ov){ov=ov||0.35;
+ var ax=sx(aX),az=sz(aY),bx=sx(bX),bz=sz(bY);
+ var dx=bx-ax,dz=bz-az,L=Math.sqrt(dx*dx+dz*dz);dx/=L;dz/=L;
+ ax-=dx*ov;az-=dz*ov;bx+=dx*ov;bz+=dz*ov;
+ var nx=dz,nz=-dx,w=halfW+ov;
+ var A1=[ax+nx*w,eave,az+nz*w],A2=[ax-nx*w,eave,az-nz*w],B1=[bx+nx*w,eave,bz+nz*w],B2=[bx-nx*w,eave,bz-nz*w],
+     Ar=[ax,ridge,az],Br=[bx,ridge,bz];
+ var P=[].concat(A1,B1,Br, A1,Br,Ar,  A2,Ar,Br, A2,Br,B2,  A1,Ar,A2,  B1,B2,Br);
+ var g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
+ g.computeVertexNormals();
+ var me=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:m.color,side:THREE.DoubleSide}));
+ me.castShadow=true;me.receiveShadow=true;scene.add(me);return me}
+
+// ---------- Flächen ----------
+fill(P810,M.pav,0.02);            // Hof/Platz überwiegend befestigt
+fill(P1174,M.lawn,0.04);          // Baumbestand-Parzelle
+fill([[692.144,385.111],[697.712,372.387],[711.494,378.572],[706.147,394.233],[702.856,401.544],[693.855,421.182]].slice(0,4),M.lawn,0.05); // Garten hinter dem Haus
+border(P810,0xe0623a,0.35,0.35);
+border(P1174,0x2f8fd6,0.35,0.35);
+outline(P1172,0x8a9099,0.15); outline(P1173,0x8a9099,0.15);
+
+// Straße Gronausestraat (Ost), Richtung aus Parzellengrenze
+(function(){var g=new THREE.Group();
+ var road=new THREE.Mesh(new THREE.PlaneGeometry(9,150),M.asph);
+ road.rotation.x=-Math.PI/2; g.add(road);
+ [-6,6].forEach(function(off){var b=new THREE.Mesh(new THREE.PlaneGeometry(2.2,150),M.bike);
+  b.rotation.x=-Math.PI/2;b.position.x=off;b.position.y=0.005;g.add(b)});
+ g.position.set(sx(766),0.03,sz(412)); g.rotation.y=-0.138; g.traverse(function(o){o.receiveShadow=true});
+ scene.add(g)})();
+
+// ---------- Gebäude Familienbesitz ----------
+// Halle Nr. 150: Wände bis Traufe 3,2 m, Satteldach bis First 6,55 m (AHN4)
+prism(HALL,3.2,M.hallW);
+gable(669.4,403.4, 715.56,423.1, 7.15, 3.15, 6.55, M.hallR);
+// Flachdach über schmalem Westflügel
+prism([[649.985,401.898],[652.48,396.203],[667.814,402.943],[667.649,403.317],[663.0,401.27]],0.25,M.hallR,3.2);
+// PV-Feld auf SO-Dachfläche
+(function(){var p=new THREE.Mesh(new THREE.BoxGeometry(16,0.16,3.2),M.pv);
+ p.position.set(sx(697.5),4.95,sz(407.9)); p.rotation.order='YXZ';
+ p.rotation.y=0.415; p.rotation.x=0.32; p.castShadow=true; scene.add(p)})();
+// weiße Giebelfront NO (Werkstattfront mit Glas + blauer Linie)
+(function(){var w=new THREE.Mesh(new THREE.PlaneGeometry(13.5,3.0),M.gable);
+ w.position.set(sx(715.9),1.6,sz(423.35)); w.rotation.y=Math.atan2(0.9153,0.4024); scene.add(w);
+ var gl=new THREE.Mesh(new THREE.PlaneGeometry(9,2.0),M.win);
+ gl.position.set(sx(716.05),1.7,sz(423.4)); gl.rotation.y=w.rotation.y; scene.add(gl);
+ var tri=new THREE.Mesh(new THREE.PlaneGeometry(10,2.6),M.gable);
+ tri.position.set(sx(715.7),4.4,sz(423.25)); tri.rotation.y=w.rotation.y; scene.add(tri)})();
+// blaue Tore + Fensterband an der Hoffassade (SO)
+(function(){var ry=Math.atan2(0.4024,0.9153);
+ [[684,401.3],[694,405.7],[704,410.1]].forEach(function(pt){
+  var d=new THREE.Mesh(new THREE.PlaneGeometry(3.6,2.7),M.blue);
+  d.position.set(sx(pt[0])+0.28*0.4,1.35,sz(pt[1])+0.28*0.92);
+  d.rotation.y=ry; scene.add(d)});
+ var band=new THREE.Mesh(new THREE.PlaneGeometry(26,1.1),M.win);
+ band.position.set(sx(689)+0.11,2.2,sz(403.5)+0.26); band.rotation.y=ry; scene.add(band)})();
+
+// Wohnhaus 152/152A, Ziegelteil mit 45°-Steildach (First 7,8 m, AHN4)
+prism(HOUSE_BRICK,3.3,M.brick);
+gable(704.5,397.9, 717.17,403.62, 4.15, 3.25, 7.8, M.roofD);
+// dunkler zweigeschossiger Flachdachteil (5,75 m, AHN4) = „erstes Wohnhaus"
+prism(HOUSE_DARK,5.75,M.dark);
+(function(){var band=new THREE.Mesh(new THREE.PlaneGeometry(7,1.2),M.win); // Fensterband Ostfront
+ band.position.set(sx(723.6)+0.2,4.0,sz(405.9)+0.35); band.rotation.y=Math.atan2(0.91,0.41); scene.add(band)})();
+
+// Showroom Nr. 154 (1961): Glas-Pavillon, Flachdach 3,55 m / vorderer Teil 4,54 m (AHN4)
+prism(SHOWROOM,3.35,M.glass);
+prism(SHOWROOM,0.2,M.gravel,3.35);
+(function(){var hi=prism(SHOWROOM_HI,0.95,M.fascia,3.55); // Attika/Obergaden Straßenseite
+ prism(SHOWROOM_HI,0.24,M.gravel,4.5);
+ // grünes Tor Richtung Hof (Rückseite)
+ var d=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.7),M.door);
+ d.position.set(sx(725.6)-0.3,1.35,sz(399.3)); d.rotation.y=-Math.PI/2+0.15; scene.add(d)})();
+
+// Schuppenzeile Südgrenze (1965, Holz, 2,4 m) + Westschuppen
+prism(SHED_ROW,2.4,M.wood); prism(SHED_ROW,0.18,M.woodR,2.4);
+prism(SHED_W,2.6,M.wood); prism(SHED_W,0.2,mat(0x7a4438),2.6);
+
+// ---------- Nachbarbebauung (Kontext) ----------
+var nbGroup=new THREE.Group(); scene.add(nbGroup);
+NB.forEach(function(n){var b=prism(n.p,n.h,M.ctx,0,nbGroup); prism(n.p,0.2,M.ctxR,n.h,nbGroup);
+ if(n.pv){var p=new THREE.Mesh(new THREE.BoxGeometry(14,0.15,6),M.pv);
+  p.position.set(sx(740),n.h+0.35,sz(375.5)); p.rotation.y=0.42; nbGroup.add(p)}});
+
+// ---------- Vegetation ----------
+function tree(x,y,r,h){var g=new THREE.Group();
+ var t=new THREE.Mesh(new THREE.CylinderGeometry(r*0.12,r*0.16,h,7),M.trunk);
+ t.position.y=h/2; t.castShadow=true; g.add(t);
+ for(var i=0;i<3;i++){var s=new THREE.Mesh(new THREE.IcosahedronGeometry(r*(0.75+0.25*Math.random()),1),i%2?M.leaf1:M.leaf2);
+  s.position.set((Math.random()-0.5)*r*0.9,h+r*0.55+(Math.random()-0.4)*r*0.5,(Math.random()-0.5)*r*0.9);
+  s.castShadow=true; g.add(s)}
+ g.position.set(sx(x),0,sz(y)); scene.add(g); return g}
+// große Kastanie am Hof (aus Drohnenbildern: ~15 m hoch, Krone ~18 m)
+(function(){var g=new THREE.Group();
+ var trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.85,5.5,10),M.trunk);
+ trunk.position.y=2.75; trunk.castShadow=true; g.add(trunk);
+ [[0,0,0,8.8],[5.5,-1.5,3.5,5.8],[-5.8,-1,3,5.6],[3.2,2.2,-5,5.4],[-3.5,1.8,-4.6,5.2],
+  [4.6,4.6,1.5,4.8],[-4.4,4.4,2.5,4.6],[0.5,5.8,-2.8,4.6],[1.5,-4.8,-1.5,4.4]].forEach(function(c,i){
+  var s=new THREE.Mesh(new THREE.IcosahedronGeometry(c[3],1),i%2?M.leaf1:M.leaf2);
+  s.position.set(c[0],9.5+c[1],c[2]); s.castShadow=true; g.add(s)});
+ g.position.set(sx(683),0,sz(392)); scene.add(g);
+ var circ=new THREE.Mesh(new THREE.CircleGeometry(3.2,28),mat(0x6b4f38));
+ circ.rotation.x=-Math.PI/2; circ.position.set(sx(683),0.05,sz(392)); scene.add(circ);
+ var ring=new THREE.Mesh(new THREE.RingGeometry(3.2,3.7,28),mat(0x8a5a3c));
+ ring.rotation.x=-Math.PI/2; ring.position.set(sx(683),0.06,sz(392)); scene.add(ring)})();
+// Baumbestand Parzelle 1174
+[[662,364],[670,366.5],[678,369],[686,372],[692,376],[666,371],[684,378]].forEach(function(p){tree(p[0],p[1],3.6+Math.random()*1.2,2.6)});
+// Bäume am Garten/Südrand
+tree(723,384,4.2,2.6);
+// Hecke zwischen Garten und 1174
+(function(){var h=new THREE.Mesh(new THREE.BoxGeometry(13.5,1.7,0.8),M.hedge);
+ h.position.set(sx(694.9),0.85,sz(378.7)); h.rotation.y=-1.158; h.castShadow=true; scene.add(h)})();
+
+// ---------- Ausstattung ----------
+function car(x,y,ry,color){var g=new THREE.Group();
+ var b=new THREE.Mesh(new THREE.BoxGeometry(4.3,1.05,1.75),mat(color)); b.position.y=0.65; b.castShadow=true; g.add(b);
+ var c=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.62,1.6),mat(color)); c.position.set(-0.2,1.45,0); c.castShadow=true; g.add(c);
+ g.position.set(sx(x),0,sz(y)); g.rotation.y=ry; scene.add(g)}
+var cols=[0xe8e8e8,0x2b2b2e,0x8f9499,0xd9d9d9,0x3a3f45,0xbfc3c7,0x22262a,0xf0f0f0];
+// Stellplatz Nordost (Autohandel)
+[[748,419],[748,423],[747.6,427],[747.2,431],[746.6,435],[746,439],
+ [737,420],[736.6,424],[736.2,428],[735.6,432],[735,436],[734.4,440]].forEach(function(p,i){car(p[0],p[1],1.72,cols[i%cols.length])});
+// Hof
+car(712,413,0.42,0xe8e8e8); car(706.5,410.6,0.42,0x33373c); car(701,408.2,0.42,0xd0d0d0); car(725,417,1.0,0xffffff);
+car(687.5,388.8,0.9,0xb3352b); // roter Käfer an der Kastanie
+// Zaun am Stellplatz entlang der Straße
+(function(){var f=new THREE.Mesh(new THREE.BoxGeometry(47.7,1.7,0.12),M.fence);
+ f.position.set(sx(752.7),0.9,sz(421.9)); f.rotation.y=1.708;
+ f.castShadow=true; scene.add(f)})();
+
+// ---------- Beschriftung ----------
+var labGroup=new THREE.Group(); scene.add(labGroup);
+function label(txt,x,y,z,s){var cv=document.createElement('canvas');cv.width=512;cv.height=128;
+ var ctx=cv.getContext('2d');ctx.fillStyle='rgba(20,28,36,0.78)';
+ var w=ctx.measureText(txt).width; ctx.font='600 44px Segoe UI,Arial';
+ w=ctx.measureText(txt).width+40;
+ ctx.fillRect((512-w)/2,24,w,80);
+ ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,256,66);
+ var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false}));
+ sp.scale.set(22*s,5.5*s,1); sp.position.set(sx(x),y,sz(z)); labGroup.add(sp)}
+label('Halle · Nr. 150',684,10.5,412,1.0);
+label('Wohnhaus 152/152A',711,11.5,401,0.95);
+label('Showroom · Nr. 154',737,8.5,398,0.9);
+label('Schuppen (1965)',700,6,376,0.75);
+label('Perceel 1174 · 552 m²',675,7.5,364,0.85);
+label('Perceel 810 · 4.500 m²',664,13,398,0.95);
+label('Gronausestraat',766,5.5,428,0.85);
+label('Stellplatz / Autohandel',741,7,430,0.75);
+// Nordpfeil
+(function(){var g=new THREE.Group();
+ var st=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,10,8),mat(0xd8dee4)); st.rotation.x=Math.PI/2; g.add(st);
+ var tip=new THREE.Mesh(new THREE.ConeGeometry(1.2,3,10),mat(0xe0623a)); tip.rotation.x=-Math.PI/2; tip.position.z=-6.5; g.add(tip);
+ g.position.set(sx(630),1.2,sz(430)); scene.add(g);
+ label('N',630,4.5,438,0.6)})();
+
+// ---------- Steuerung ----------
+var target=new THREE.Vector3(8,0,-4), theta=0.72, phi=1.02, radius=150;
+function applyCam(){camera.position.set(
+ target.x+radius*Math.sin(phi)*Math.sin(theta),
+ target.y+radius*Math.cos(phi),
+ target.z+radius*Math.sin(phi)*Math.cos(theta));
+ camera.lookAt(target)}
+applyCam();
+var drag=false,pan=false,px=0,py=0;
+canvas.addEventListener('contextmenu',function(e){e.preventDefault()});
+canvas.addEventListener('pointerdown',function(e){drag=true;pan=(e.button===2||e.shiftKey);px=e.clientX;py=e.clientY;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointerup',function(){drag=false});
+canvas.addEventListener('pointermove',function(e){if(!drag)return;
+ var dx=e.clientX-px,dy=e.clientY-py;px=e.clientX;py=e.clientY;
+ if(pan){var k=radius/600;
+  var rx=Math.cos(theta),rz=-Math.sin(theta);
+  var fx=-Math.sin(theta),fz=-Math.cos(theta);
+  target.x+=(-dx*rx+dy*fx)*k; target.z+=(-dx*rz+dy*fz)*k}
+ else{theta-=dx*0.0055;phi-=dy*0.0045;phi=Math.max(0.08,Math.min(1.52,phi))}
+ applyCam()});
+canvas.addEventListener('wheel',function(e){e.preventDefault();
+ radius*=1+e.deltaY*0.0011;radius=Math.max(25,Math.min(500,radius));applyCam()},{passive:false});
+
+// Buttons
+function anim(toTheta,toPhi,toR,toT){var f=0,ft=theta,fp=phi,fr=radius,tt=target.clone();
+ var iv=setInterval(function(){f+=0.05;var e=f<1?(1-Math.pow(1-f,3)):1;
+  theta=ft+(toTheta-ft)*e;phi=fp+(toPhi-fp)*e;radius=fr+(toR-fr)*e;
+  target.copy(tt).lerp(toT,e);applyCam();if(f>=1)clearInterval(iv)},16)}
+document.getElementById('bTop').onclick=function(){anim(theta,0.09,190,new THREE.Vector3(4,0,6))};
+document.getElementById('bDrone').onclick=function(){anim(0.72,1.02,150,new THREE.Vector3(8,0,-4))};
+document.getElementById('bLab').onclick=function(){labGroup.visible=!labGroup.visible;this.classList.toggle('on')};
+document.getElementById('bNb').onclick=function(){nbGroup.visible=!nbGroup.visible;this.classList.toggle('on')};
+
+// Render
+function resize(){var w=canvas.clientWidth,h=canvas.clientHeight;
+ if(canvas.width!==w||canvas.height!==h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}}
+(function loop(){resize();renderer.render(scene,camera);requestAnimationFrame(loop)})();
+</script>
+</body>
+</html>
