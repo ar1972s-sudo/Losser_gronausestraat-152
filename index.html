@@ -35,6 +35,8 @@
     <button class="state" data-s="A">Variante A</button>
     <button class="state" data-s="B">Variante B</button>
     <button class="state" data-s="C">Variante C</button>
+    <button class="state" data-s="D">Variante D</button>
+    <button class="state" data-s="Dp">D+</button>
   </div>
   <div class="btns">
     <button id="bTop">Draufsicht</button>
@@ -374,17 +376,100 @@ label('C · Parkvilla West · 3+1 · 7 WE',660,16.5,396,0.95,labC);
 label('Parkdeck halbversenkt · 30 Pl.',714,5,411,0.75,labC);
 label('Kastanienpark',683,6.5,381,0.75,labC);
 
+// ================= VARIANTE D · 14 grondgebonden (Stoevenbeld-Typologie) =================
+var gD=new THREE.Group(); scene.add(gD);
+fill(P810,M.gruen,0.02,gD);
+zufahrt(gD); plazaKastanie(gD,13);
+// Zeile: 8 Rijwoningen (2 Geschosse + Kap) auf der Hallenspur
+rbox(675,406, 40,9, A_HOF, 5.8, M.brick, 0, gD);
+gableRoof(656.7,398.0, 693.3,414.0, 4.6, 5.7, 9.3, M.roofD, gD);
+[[664,402.5],[672,406],[680,409.5],[688,413]].forEach(function(pt){
+ var p=new THREE.Mesh(new THREE.BoxGeometry(6.5,0.14,2.6),M.pv);
+ p.position.set(sx(pt[0]),7.9,sz(pt[1])+1.6); p.rotation.order='YXZ'; p.rotation.y=A_HOF; p.rotation.x=0.55; gD.add(p)});
+// 3 Tweekapper im Scheunenstil (dunkel, steile Kap)
+function tweekap(cx,cy,a,ax,ay,bx,by,parent){
+ rbox(cx,cy,11.5,9.5,a,3.2,M.dark,0,parent);
+ gableRoof(ax,ay,bx,by,4.85,3.1,8.8,M.roofD,parent);
+ var p=new THREE.Mesh(new THREE.BoxGeometry(5,0.14,2.8),M.pv);
+ p.position.set(sx(cx),6.6,sz(cy)+2.6); p.rotation.order='YXZ'; p.rotation.y=a; p.rotation.x=0.6; parent.add(p)}
+tweekap(744,422,A_STREET, 744.8,416.3, 743.2,427.7, gD);
+tweekap(743,400,A_STREET, 743.8,394.3, 742.2,405.7, gD);
+tweekap(712,390,A_HOF,    706.7,387.7, 717.3,392.3, gD);
+// Gärten: Hecken + Bergingen
+rbox(678,399.5,40,0.7,A_HOF,1.2,M.hedge,0,gD);
+rbox(737.5,421,0.7,12,A_STREET,1.2,M.hedge,0,gD);
+rbox(736.5,399,0.7,10,A_STREET,1.2,M.hedge,0,gD);
+rbox(712,384.5,12,0.7,A_HOF,1.2,M.hedge,0,gD);
+[[700,414.5],[686,408.5],[666,400.5],[749,413.5],[735,394.5],[719,395.5]].forEach(function(pt){
+ rbox(pt[0],pt[1],3,2,A_HOF,2.3,mat(0x8d8d89),0,gD)});
+// Parken: Parkhof 8, Längsparken 6, Opritten an den Tweekappern (2 je Haus)
+lot(722,392.5, 20,11, A_HOF, gD, 8, 1);
+lot(749.5,406.5, 13,5.5, A_STREET, gD, 6, 1);
+[[747.5,417],[740,427],[746.5,395.5],[739,404.5],[706,385],[718,388.5]].forEach(function(pt){
+ rbox(pt[0],pt[1],5,2.6,A_HOF,0.04,M.lot,0.02,gD)});
+wadi(672,378,10,5.5,-0.35,gD);
+spielplatz(695,384,gD);
+[[733,412],[700,410],[726,431]].forEach(function(p){tree(p[0],p[1],2.8,2.3,gD)});
+var labD=new THREE.Group(); labGroup.add(labD);
+label('D · 8 Rijwoningen · 2+Kap',675,13,406,0.95,labD);
+label('D · 3× Tweekapper (Schuurstil)',743,13,411,0.9,labD);
+label('Parkhof + Opritten · 26 Pl.',722,5,392.5,0.7,labD);
+label('Kastanienplatz',683,6.5,383,0.7,labD);
+
+// ================= VARIANTE D+ · 22 Rijwoningen in 3 Zeilen =================
+var gDp=new THREE.Group(); scene.add(gDp);
+fill(P810,M.gruen,0.02,gDp);
+plazaKastanie(gDp,13);
+rbox(750.5,401.5,10,6,A_HOF,0.04,M.asph,0.02,gDp);        // Zufahrt
+rbox(720,397.5,48,4.8,A_HOF,0.04,M.asph,0.02,gDp);        // Wohnstraße (Feuerwehrschleife)
+rbox(733.5,411,4.8,28,A_STREET,0.04,M.asph,0.02,gDp);     // Stich zum Parkhof Nord
+// Zeile West · 8
+rbox(675,406, 40,9, A_HOF, 5.8, M.brick, 0, gDp);
+gableRoof(656.7,398.0, 693.3,414.0, 4.6, 5.7, 9.3, M.roofD, gDp);
+// Zeile Ost · 8
+rbox(742,420, 43,9, A_STREET, 5.8, M.brick, 0, gDp);
+gableRoof(744.9,398.8, 739.1,441.2, 4.6, 5.7, 9.3, M.roofD, gDp);
+// Zeile Süd · 6
+rbox(716,388, 32,9, A_HOF, 5.8, M.brick, 0, gDp);
+gableRoof(701.4,381.6, 730.6,394.4, 4.6, 5.7, 9.3, M.roofD, gDp);
+// PV-Felder
+[[668,404.5,A_HOF],[684,411,A_HOF],[710,388.5,A_HOF],[724,394.5,A_HOF],[743.5,412,A_STREET],[741,430,A_STREET]].forEach(function(pt){
+ var p=new THREE.Mesh(new THREE.BoxGeometry(7,0.14,2.6),M.pv);
+ p.position.set(sx(pt[0]),7.9,sz(pt[1])); p.rotation.order='YXZ'; p.rotation.y=pt[2]; p.rotation.x=0.55; gDp.add(p)});
+// Hecken + Bergingen
+rbox(678,399.5,40,0.7,A_HOF,1.2,M.hedge,0,gDp);
+rbox(716,380.5,30,0.7,A_HOF,1.2,M.hedge,0,gDp);
+rbox(749,420,0.7,40,A_STREET,1.2,M.hedge,0,gDp);
+[[666,401],[682,408],[706,384.5],[720,391],[746,410],[744,428]].forEach(function(pt){
+ rbox(pt[0],pt[1],3,2,A_HOF,2.3,mat(0x8d8d89),0,gDp)});
+// Parken: 16 Nord + 5 West + 5 Besucher + 9 Längs = 35
+lot(728,427, 22,15, A_STREET, gDp, 8, 2);
+lot(656,393, 12,8, A_HOF, gDp, 5, 1);
+lot(748.5,399, 12,5.5, A_HOF, gDp, 5, 1);
+lot(710,401.5, 38,2.6, A_HOF, gDp, 9, 1);
+wadi(672,378,10,5.5,-0.35,gDp);
+spielplatz(690,380,gDp);
+[[697,410],[736,404]].forEach(function(p){tree(p[0],p[1],2.8,2.3,gDp)});
+muell(748.5,404.5,A_HOF,gDp);
+var labDp=new THREE.Group(); labGroup.add(labDp);
+label('D+ · Zeile West · 8 Rijwoningen',675,13,406,0.9,labDp);
+label('D+ · Zeile Ost · 8 Rijwoningen',742,13,420,0.9,labDp);
+label('D+ · Zeile Süd · 6 Rijwoningen',716,13,388,0.9,labDp);
+label('35 Stellplätze',728,5,427,0.7,labDp);
+
 // ================= Zustands-Umschaltung =================
 var STATES={
  bestand:{g:[gBestand],l:[labBestand],info:'<b>Bestand:</b> Halle (1970, First 6,6 m), Wohnhaus 152/152A (1970), Showroom (1961), Schuppen (1965). Gewerbehof mit Autohandel, ~5.050 m² Grundstück.'},
  abriss:{g:[gAbriss],l:[labAbriss],info:'<b>Abriss:</b> unbebaute Entwicklungsfläche ~5.050 m² (810 + 1174). Kastanie und Baumbestand 1174 bleiben erhalten. Bodensanierung (Garagennutzung) im Budget berücksichtigen.'},
  A:{g:[gA],l:[labA],info:'<b>Variante A · Maximale Dichte:</b> 36 WE in 2 Blöcken à 3 Geschosse (9,9 m). Mix 11 sozial / 11 mittel / 14 höher. BGF ~3.240 m², 56 Stellplätze (CROW-Annahme), Wadi auf 1174, Kastanienplatz als Quartiersmitte.'},
  B:{g:[gB],l:[labB],info:'<b>Variante B · Balance:</b> 26 WE in 3 Baukörpern (2-3 Geschosse). Mix 8/8/10. BGF ~2.700 m², 43 Stellplätze, großzügiger Kastanienhof, beste Abwägung aus Ertrag, Genehmigungsfähigkeit und Wohnqualität.'},
- C:{g:[gC],l:[labC],info:'<b>Variante C · Premium:</b> 18 große WE in 2 Parkvillen (3 Geschosse + Staffel, 13 m). Ohne Quote. BGF ~2.900 m², halbversenktes Parkdeck (30 Pl.) + 8 Besucher, Kastanienpark, maximaler Wert je m².'}
+ C:{g:[gC],l:[labC],info:'<b>Variante C · Premium:</b> 18 große WE in 2 Parkvillen (3 Geschosse + Staffel, 13 m). Ohne Quote. BGF ~2.900 m², halbversenktes Parkdeck (30 Pl.) + 8 Besucher, Kastanienpark, maximaler Wert je m².'},
+ D:{g:[gD],l:[labD],info:'<b>Variante D · Grondgebonden (Stoevenbeld-Typologie):</b> 14 Häuser: 8 Rijwoningen (2 Gesch. + Kap, ~9,3 m First) und 3 Tweekapper im Schuurstil (~8,8 m). Private Gärten, Bergingen, 26 Stellplätze (davon 12 auf eigenen Opritten). Präzedenzfall Het Stoevenbeld, Overdinkel (Nejboer, genehmigt). Höchste Akzeptanz, niedrigste Dichte.'},
+ Dp:{g:[gDp],l:[labDp],info:'<b>Variante D+ · Verdichtung grondgebonden:</b> 22 Rijwoningen in 3 Zeilen (West 8, Ost 8, Süd 6; 2 Gesch. + Kap). Maximum an Reihenhäusern, das Gärten, Feuerwehrschleife, 35 Stellplätze und Wasserrückhalt noch zulassen. Kastanienplatz bleibt Quartiersmitte. Residual ca. 0,3-0,6 Mio. €, unter Variante A.'}
 };
 function setState(s){
- [gBestand,gAbriss,gA,gB,gC].forEach(function(g){g.visible=false});
- [labBestand,labAbriss,labA,labB,labC].forEach(function(g){g.visible=false});
+ [gBestand,gAbriss,gA,gB,gC,gD,gDp].forEach(function(g){g.visible=false});
+ [labBestand,labAbriss,labA,labB,labC,labD,labDp].forEach(function(g){g.visible=false});
  STATES[s].g.forEach(function(g){g.visible=true});
  STATES[s].l.forEach(function(g){g.visible=true});
  document.getElementById('info').innerHTML=STATES[s].info;
