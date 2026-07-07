@@ -37,6 +37,8 @@
     <button class="state" data-s="C">Variante C</button>
     <button class="state" data-s="D">Variante D</button>
     <button class="state" data-s="Dp">D+</button>
+    <button class="state" data-s="E">Variante E</button>
+    <button class="state" data-s="Eo">E-Optimum</button>
   </div>
   <div class="btns">
     <button id="bTop">Draufsicht</button>
@@ -230,8 +232,9 @@ NB.forEach(function(n){prism(n.p,n.h,M.ctx,0,nbGroup); prism(n.p,0.2,M.ctxR,n.h,
  circ.rotation.x=-Math.PI/2; circ.position.set(sx(683),0.12,sz(392)); scene.add(circ);
  var ring=new THREE.Mesh(new THREE.RingGeometry(3.2,3.7,28),mat(0x8a5a3c));
  ring.rotation.x=-Math.PI/2; ring.position.set(sx(683),0.13,sz(392)); scene.add(ring)})();
-// Baumbestand 1174 (bleibt erhalten)
-[[662,364],[670,366.5],[678,369],[686,372],[692,376],[666,371],[684,378]].forEach(function(p){tree(p[0],p[1],3.6+Math.random()*1.2,2.6)});
+// Baumbestand 1174 (bleibt erhalten, außer in Variante E)
+var g1174=new THREE.Group(); scene.add(g1174);
+[[662,364],[670,366.5],[678,369],[686,372],[692,376],[666,371],[684,378]].forEach(function(p){tree(p[0],p[1],3.6+Math.random()*1.2,2.6,g1174)});
 label('Perceel 1174 · 552 m²',675,7.5,364,0.85);
 label('Perceel 810 · 4.500 m²',664,13,398,0.95);
 label('Gronausestraat',766,5.5,428,0.85);
@@ -457,6 +460,79 @@ label('D+ · Zeile Ost · 8 Rijwoningen',742,13,420,0.9,labDp);
 label('D+ · Zeile Süd · 6 Rijwoningen',716,13,388,0.9,labDp);
 label('35 Stellplätze',728,5,427,0.7,labDp);
 
+// ================= VARIANTE E · Woonstraat mit Kastanien-Kreisel · 25 WE =================
+var gE=new THREE.Group(); scene.add(gE);
+fill(P810,M.gruen,0.02,gE);
+// zentrale verkehrsberuhigte Woonstraat: Zufahrt Mitte Ost, Wendeschleife um die Kastanie
+rbox(751.5,422, 9,6, A_HOF, 0.04, M.asph, 0.02, gE);          // Zufahrt Gronausestraat (Mitte)
+rbox(719,408, 62,5.5, A_HOF, 0.04, M.asph, 0.02, gE);         // Woonstraat
+(function(){var lus=new THREE.Mesh(new THREE.RingGeometry(4.2,9,36),M.asph);
+ lus.rotation.x=-Math.PI/2; lus.position.set(sx(683),0.04,sz(392)); lus.receiveShadow=true; gE.add(lus)})();
+fill(P1174,M.gruen,0.03,gE); // 1174 wird in E Bauland (Zeile am Grün)
+rbox(693,383.5, 4.5,12, A_STREET, 0.04, M.asph, 0.02, gE); // Stich Lus -> Parkhof/1174
+// Parken: Nord 16, Süd 13, Besucher 4, Parkhof Süd 7, am Auftakt 4, West 4 = 48
+lot(719,413.7, 40,5, A_HOF, gE, 16, 1);
+lot(723,404.1, 34,5, A_HOF, gE, 13, 1);
+lot(745.5,416.5, 10,5, A_HOF, gE, 4, 1);
+lot(702,379, 18,11, A_HOF, gE, 7, 1);
+lot(748.5,411, 11,5, A_STREET, gE, 4, 1);
+lot(654,393.5, 10,7, A_HOF, gE, 4, 1);
+// Auftaktgebäude SÜDOST (an fensterloser Nachbarwand): 3 Geschosse, 9 App.
+blok(740.5,406.5, 20,13, A_STREET, 3, gE);
+// Nordzeile Ost: 5 Rijwoningen 2+Kap (statt 3-Geschosser)
+rbox(727.2,427.1, 22,10, A_HOF, 5.8, M.brick, 0, gE);
+gableRoof(717.1,422.7, 737.3,431.5, 5.1, 5.7, 9.4, M.roofD, gE);
+// Nordzeile West: 5 Rijwoningen 2+Kap
+rbox(703.4,416.7, 22,10, A_HOF, 5.8, M.brick, 0, gE);
+gableRoof(693.3,412.3, 713.5,421.1, 5.1, 5.7, 9.4, M.roofD, gE);
+// Südzeile: 4 Rijwoningen
+rbox(715.7,391.1, 20,10, A_HOF, 5.8, M.brick, 0, gE);
+gableRoof(706.5,387.1, 724.9,395.1, 5.1, 5.7, 9.4, M.roofD, gE);
+// Nordwestzeile an der Wendeschleife: 3 Rijwoningen
+rbox(662,399.5, 16,9, A_HOF, 5.8, M.brick, 0, gE);
+gableRoof(654.7,396.3, 669.3,402.7, 4.6, 5.7, 9.3, M.roofD, gE);
+// Zeile am Grün auf Perceel 1174: 6 Rijwoningen, Gärten nach Südwesten
+rbox(677,371, 30,9, A_HOF, 5.8, M.brick, 0, gE);
+gableRoof(663.3,365.0, 690.7,377.0, 4.6, 5.7, 9.3, M.roofD, gE);
+// Tweekapper Westspitze: 2 WE in der Lücke zwischen NW-Zeile und Zeile am Grün
+tweekap(659.5,381, A_HOF, 654.2,378.7, 664.8,383.3, gE);
+rbox(671,386.5, 12,3, A_HOF, 0.03, M.weg, 0.05, gE);   // Stich von der Wendeschleife
+rbox(667,382, 5,5, A_HOF, 0.04, M.lot, 0.02, gE);      // 2 Opritten
+// PV, Hecken, Bergingen, Bäume
+[[700,415.5,A_HOF],[725,425.5,A_HOF],[713,389.7,A_HOF],[660,398,A_HOF],[675,373.5,A_HOF]].forEach(function(pt){
+ var p=new THREE.Mesh(new THREE.BoxGeometry(7,0.14,2.6),M.pv);
+ p.position.set(sx(pt[0]),7.9,sz(pt[1])); p.rotation.order='YXZ'; p.rotation.y=pt[2]; p.rotation.x=0.55; gE.add(p)});
+rbox(708,424.5,30,0.7,A_HOF,1.2,M.hedge,0,gE);
+rbox(716,385.5,22,0.7,A_HOF,1.2,M.hedge,0,gE);
+rbox(677,364.5,32,0.7,A_HOF,1.2,M.hedge,0,gE);
+[[695,420],[706,383.5],[666,404.5],[668,366.5],[688,375.5]].forEach(function(pt){
+ rbox(pt[0],pt[1],3,2,A_HOF,2.3,mat(0x8d8d89),0,gE)});
+[[706,412.2],[724,420.2],[740,427.2]].forEach(function(p){tree(p[0],p[1],2.4,2.2,gE)});
+wadi(650,391.5,5,3.5,-0.35,gE);
+spielplatz(668,393,gE);
+muell(748.5,418,A_HOF,gE);
+var labE=new THREE.Group(); labGroup.add(labE);
+label('E · Woonstraat · Wendeschleife um die Kastanie',706,16,404,0.95,labE);
+label('E · Auftakt Südost · 3 G. · 9 App.',740.5,14,406.5,0.85,labE);
+label('E · 17 Rijwoningen am Hof',714,11.5,417,0.8,labE);
+label('E · Zeile am Grün (1174) · 6 Rij.',677,11.5,371,0.8,labE);
+label('E · Tweekapper West · 2 WE',659.5,11,381,0.75,labE);
+label('50 Stellplätze',712,5,402,0.7,labE);
+
+// ================= E-OPTIMUM · Empfehlungsvariante · 37 WE =================
+// nutzt die komplette E-Geometrie plus Staffelgeschoss auf dem Auftakt Südost
+var gEo=new THREE.Group(); scene.add(gEo);
+rbox(740.5,406.5, 15,9.5, A_STREET, 3.0, M.neu, 9.95, gEo);   // Staffelgeschoss (3 Penthäuser)
+rbox(740.5,406.5, 15.3,9.8, A_STREET, 0.24, M.neuDach, 12.95, gEo);
+(function(){var band=new THREE.Mesh(new THREE.BoxGeometry(13.5,1.5,9.92),M.neuGlas);
+ band.position.set(sx(740.5),11.7,sz(406.5)); band.rotation.y=A_STREET; gEo.add(band)})();
+var labEo=new THREE.Group(); labGroup.add(labEo);
+label('E-Optimum · Kastanjehof · 37 WE',700,18,404,1.0,labEo);
+label('Auftakt Südost · 3 + Staffel · 12 App.',740.5,16.5,406.5,0.85,labEo);
+label('Holzbau-Zeilen · 23 Rij. + Tweekapper',690,12,410,0.8,labEo);
+label('Zeile am Grün (1174) · 6 Rij.',677,11.5,371,0.75,labEo);
+label('50 Stellplätze · Parkeerbalans nötig',712,5,402,0.7,labEo);
+
 // ================= Zustands-Umschaltung =================
 var STATES={
  bestand:{g:[gBestand],l:[labBestand],info:'<b>Bestand:</b> Halle (1970, First 6,6 m), Wohnhaus 152/152A (1970), Showroom (1961), Schuppen (1965). Gewerbehof mit Autohandel, ~5.050 m² Grundstück.'},
@@ -465,11 +541,14 @@ var STATES={
  B:{g:[gB],l:[labB],info:'<b>Variante B · Balance:</b> 26 WE in 3 Baukörpern (2-3 Geschosse). Mix 8/8/10. BGF ~2.700 m², 43 Stellplätze, großzügiger Kastanienhof, beste Abwägung aus Ertrag, Genehmigungsfähigkeit und Wohnqualität.'},
  C:{g:[gC],l:[labC],info:'<b>Variante C · Premium:</b> 18 große WE in 2 Parkvillen (3 Geschosse + Staffel, 13 m). Ohne Quote. BGF ~2.900 m², halbversenktes Parkdeck (30 Pl.) + 8 Besucher, Kastanienpark, maximaler Wert je m².'},
  D:{g:[gD],l:[labD],info:'<b>Variante D · Grondgebonden (Stoevenbeld-Typologie):</b> 14 Häuser: 8 Rijwoningen (2 Gesch. + Kap, ~9,3 m First) und 3 Tweekapper im Schuurstil (~8,8 m). Private Gärten, Bergingen, 26 Stellplätze (davon 12 auf eigenen Opritten). Präzedenzfall Het Stoevenbeld, Overdinkel (Nejboer, genehmigt). Höchste Akzeptanz, niedrigste Dichte.'},
- Dp:{g:[gDp],l:[labDp],info:'<b>Variante D+ · Verdichtung grondgebonden:</b> 22 Rijwoningen in 3 Zeilen (West 8, Ost 8, Süd 6; 2 Gesch. + Kap). Maximum an Reihenhäusern, das Gärten, Feuerwehrschleife, 35 Stellplätze und Wasserrückhalt noch zulassen. Kastanienplatz bleibt Quartiersmitte. Residual ca. 0,3-0,6 Mio. €, unter Variante A.'}
+ Dp:{g:[gDp],l:[labDp],info:'<b>Variante D+ · Verdichtung grondgebonden:</b> 22 Rijwoningen in 3 Zeilen (West 8, Ost 8, Süd 6; 2 Gesch. + Kap). Maximum an Reihenhäusern, das Gärten, Feuerwehrschleife, 35 Stellplätze und Wasserrückhalt noch zulassen. Kastanienplatz bleibt Quartiersmitte. Residual ca. 0,3-0,6 Mio. €, unter Variante A.'},
+ E:{g:[gE],l:[labE],info:'<b>Variante E · Woonstraat (verdichtet):</b> Quartiersstraße mit Wendeschleife um die Kastanie. 34 WE: 17 Rijwoningen am Hof, 6 in der Zeile am Grün (1174), Tweekapper Westspitze (2 WE), 3-gesch. Auftaktgebäude Südost an der fensterlosen Nachbarwand (9 App.). 50 Stellplätze inkl. Parkhof und 2 Opritten. Achtung: Baumbestand 1174 entfällt weitgehend (Kapvergunning/Flora-Fauna prüfen), Wadi in der Westspitze. Residual ca. 0,7-1,0 Mio. €.'},
+ Eo:{g:[gE,gEo],l:[labEo],info:'<b>E-Optimum · Empfehlungsvariante:</b> Variante E plus Staffelgeschoss Südost (3 Penthäuser mit Blick über den Kastanjehof) = 37 WE. Werthebel: serieller Holzbau der Zeilen (-6 % Baukosten), levensloopbestendige Rijwoningen (Preisaufschlag + Quotenargument), Vermarktung als "Kastanjehof". Residual ca. 1,3-1,7 Mio. € = A-Niveau bei geringerem Genehmigungs- und Marktrisiko. Kritischster Prüfpunkt: Parkeerbalans (50 nachgewiesen, Bedarf ~62, Doppelnutzung + Mobilitätsplan nötig).'}
 };
 function setState(s){
- [gBestand,gAbriss,gA,gB,gC,gD,gDp].forEach(function(g){g.visible=false});
- [labBestand,labAbriss,labA,labB,labC,labD,labDp].forEach(function(g){g.visible=false});
+ [gBestand,gAbriss,gA,gB,gC,gD,gDp,gE,gEo].forEach(function(g){g.visible=false});
+ [labBestand,labAbriss,labA,labB,labC,labD,labDp,labE,labEo].forEach(function(g){g.visible=false});
+ g1174.visible=(s!=='E'&&s!=='Eo');
  STATES[s].g.forEach(function(g){g.visible=true});
  STATES[s].l.forEach(function(g){g.visible=true});
  document.getElementById('info').innerHTML=STATES[s].info;
